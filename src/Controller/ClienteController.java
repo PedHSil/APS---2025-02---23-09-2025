@@ -7,8 +7,8 @@ public class ClienteController {
     private ClienteDAO dao = new ClienteDAO();
 
     // Mantive o método original (se você quiser mantê-lo)
-    public void adicionarCliente(String nome, String email, String telefone) {
-        Cliente c = new Cliente(0, nome, email, telefone);
+    public void adicionarCliente(String nome) {
+        Cliente c = new Cliente(0, nome);
         dao.salvar(c);
     }
 
