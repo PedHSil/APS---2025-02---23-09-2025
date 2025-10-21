@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Executar JanelaPrincipal",
+      "request": "launch",
+      "mainClass": "View.JanelaPrincipal",
+      "classPaths": [
+        "${workspaceFolder}/bin",
+        "${workspaceFolder}/lib/*"
+      ]
+    }
+  ]
+}
