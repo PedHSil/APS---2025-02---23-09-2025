@@ -1,7 +1,8 @@
 package View;
 
-import Controller.*;
-import Model.*;
+import Controller.ClienteController;
+import Model.Cliente;
+import View.FormCliente;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
