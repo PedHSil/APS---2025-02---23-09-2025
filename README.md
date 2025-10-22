@@ -75,3 +75,6 @@ VALUES
 cd "C:\Users\Pedro\Documents\APS - 2025-02 - 23-09-2025\APS - 2025-02 - 23-09-2025\src"
 $files = Get-ChildItem -Recurse -Filter *.java | ForEach-Object { $_.FullName }
 javac -d ..\bin $files
+
+
+mysql -u root -p
