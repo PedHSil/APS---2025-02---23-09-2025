@@ -7,15 +7,16 @@ public class Cliente {
     private String nome;
     private Timestamp createdAt;
     private Timestamp updatedAt;
+    private String email; // <-- novo campo
 
-    public Cliente() {}
+    public Cliente() { }
 
     public Cliente(int id, String nome) {
         this.id = id;
         this.nome = nome;
     }
 
-    // Getters e Setters
+    // Getters e setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -27,4 +28,12 @@ public class Cliente {
 
     public Timestamp getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getEmail() { return email; }  // <-- getter
+    public void setEmail(String email) { this.email = email; } // <-- setter
+
+    @Override
+    public String toString() {
+        return id + " - " + nome + (email != null ? " (" + email + ")" : "");
+    }
 }

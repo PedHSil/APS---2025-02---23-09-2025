@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "TesteConexao",
+      "request": "launch",
+      "mainClass": "Controller.TesteConexao",
+      "projectName": "APS - 2025-02 - 23-09-2025_32fccfd6"
+    },
+    {
+      "type": "java",
       "name": "Executar JanelaPrincipal",
       "request": "launch",
       "mainClass": "View.JanelaPrincipal",
