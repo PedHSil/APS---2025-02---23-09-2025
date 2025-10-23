@@ -17,19 +17,17 @@ public class JanelaPrincipal extends Frame {
         setSize(600, 500);
         setLayout(new BorderLayout(10, 10));
 
-        // === Tema escuro ===
-        Color corFundo = new Color(30, 30, 30);       // cinza bem escuro
+        // Tema escuro
+        Color corFundo = new Color(30, 30, 30);
         Color corTexto = Color.WHITE;
-        Color corListaFundo = new Color(45, 45, 45);  // fundo levemente mais claro
-        Color corBotaoFiltrar = new Color(70, 130, 180); // azul suave
+        Color corListaFundo = new Color(45, 45, 45);
+        Color corBotaoFiltrar = new Color(70, 130, 180);
 
         setBackground(corFundo);
 
-        // Fonte Century Gothic
         Font fontePadrao = new Font("Century Gothic", Font.PLAIN, 14);
         setFont(fontePadrao);
 
-        // Lista de clientes escura
         listaClientes.setBackground(corListaFundo);
         listaClientes.setForeground(corTexto);
         listaClientes.setFont(fontePadrao);
@@ -38,7 +36,6 @@ public class JanelaPrincipal extends Frame {
         txtBusca.setForeground(corTexto);
         txtBusca.setFont(fontePadrao);
 
-        // Painel superior com busca centralizada
         Panel painelBusca = new Panel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         painelBusca.setBackground(corFundo);
         Label lblBuscar = new Label("Buscar:");
@@ -52,7 +49,6 @@ public class JanelaPrincipal extends Frame {
         painelBusca.add(btnBuscar);
         add(painelBusca, BorderLayout.NORTH);
 
-        // Painel inferior com botões centralizados
         Panel botoes = new Panel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         botoes.setBackground(corFundo);
 
@@ -60,7 +56,6 @@ public class JanelaPrincipal extends Frame {
         Button btnRemover = new Button("Remover");
         Button btnEditar = new Button("Editar");
 
-        // === Agora com texto preto (em vez de branco) ===
         btnAdd.setForeground(Color.BLACK);
         btnRemover.setForeground(Color.BLACK);
         btnEditar.setForeground(Color.BLACK);
@@ -74,16 +69,20 @@ public class JanelaPrincipal extends Frame {
 
         atualizarLista();
 
-        // === Eventos ===
+        // Eventos
         btnAdd.addActionListener(e -> new FormCliente(this, controller, null));
 
         btnRemover.addActionListener(e -> {
             int idx = listaClientes.getSelectedIndex();
             if (idx >= 0) {
                 String linha = listaClientes.getSelectedItem();
-                int id = Integer.parseInt(linha.split(" - ")[0]);
-                controller.removerCliente(id);
-                atualizarLista();
+                try {
+                    int id = Integer.parseInt(linha.split(" - ", 2)[0]);
+                    controller.removerCliente(id);
+                    atualizarLista();
+                } catch (NumberFormatException ex) {
+                    System.err.println("Erro ao converter id: '" + linha + "'");
+                }
             }
         });
 
@@ -91,9 +90,13 @@ public class JanelaPrincipal extends Frame {
             int idx = listaClientes.getSelectedIndex();
             if (idx >= 0) {
                 String linha = listaClientes.getSelectedItem();
-                int id = Integer.parseInt(linha.split(" - ")[0]);
-                Cliente c = controller.buscarClientePorId(id);
-                new FormCliente(this, controller, c);
+                try {
+                    int id = Integer.parseInt(linha.split(" - ", 2)[0]);
+                    Cliente c = controller.buscarClientePorId(id);
+                    new FormCliente(this, controller, c);
+                } catch (NumberFormatException ex) {
+                    System.err.println("Erro ao converter id: '" + linha + "'");
+                }
             }
         });
 
@@ -109,11 +112,23 @@ public class JanelaPrincipal extends Frame {
         setVisible(true);
     }
 
+    // Atualiza listagem — monta string explicitamente e imprime debug
     public void atualizarLista() {
         listaClientes.removeAll();
         List<Cliente> clientes = controller.listarClientes();
-        for (Cliente c : clientes) {
-            listaClientes.add(c.toString());
+
+        System.out.println("DEBUG: atualizarLista() - clientes.size() = " + (clientes == null ? 0 : clientes.size()));
+
+        if (clientes != null) {
+            for (Cliente c : clientes) {
+                // DEBUG: mostrar qual classe está sendo usada em runtime e toString()
+                System.out.println("DEBUG: cliente.getClass().getName() = " + (c == null ? "null" : c.getClass().getName()));
+                System.out.println("DEBUG: cliente.toString() = " + (c == null ? "null" : c.toString()));
+
+                String nome = c.getNome() == null ? "" : c.getNome();
+                String linha = c.getId() + " - " + nome; // formato fixo
+                listaClientes.add(linha);
+            }
         }
     }
 
@@ -126,8 +141,17 @@ public class JanelaPrincipal extends Frame {
         } else {
             clientes = controller.buscarClientes(termo);
         }
-        for (Cliente c : clientes) {
-            listaClientes.add(c.toString());
+
+        System.out.println("DEBUG: filtrarLista() - termo='" + termo + "', clientes.size()=" + (clientes == null ? 0 : clientes.size()));
+
+        if (clientes != null) {
+            for (Cliente c : clientes) {
+                System.out.println("DEBUG: cliente.getClass().getName() = " + (c == null ? "null" : c.getClass().getName()));
+                System.out.println("DEBUG: cliente.toString() = " + (c == null ? "null" : c.toString()));
+                String nome = c.getNome() == null ? "" : c.getNome();
+                String linha = c.getId() + " - " + nome;
+                listaClientes.add(linha);
+            }
         }
     }
 

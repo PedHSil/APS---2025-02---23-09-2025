@@ -27,27 +27,39 @@ public class ClienteDAO {
     }
 
     // ✅ LISTAR todos os clientes
-    public List<Cliente> listar() {
-        List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT id, nome, created_at, updated_at FROM cliente ORDER BY id DESC";
-        try (Connection conn = Conexao.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+   public List<Cliente> listar() {
+    List<Cliente> lista = new ArrayList<>();
+    String sql = "SELECT id, nome, created_at, updated_at FROM cliente ORDER BY id DESC";
+    System.out.println("DEBUG: Executando listar() -> SQL: " + sql);
+    try (Connection conn = Conexao.getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
 
-            while (rs.next()) {
-                Cliente c = new Cliente();
-                c.setId(rs.getInt("id"));
-                c.setNome(rs.getString("nome"));
-                c.setCreatedAt(rs.getTimestamp("created_at"));
-                c.setUpdatedAt(rs.getTimestamp("updated_at"));
-                lista.add(c);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        int contador = 0;
+        while (rs.next()) {
+            contador++;
+            int id = rs.getInt("id");
+            String nome = rs.getString("nome");
+            Timestamp created = rs.getTimestamp("created_at");
+            Timestamp updated = rs.getTimestamp("updated_at");
+
+            // DEBUG: imprimir os valores recebidos do banco
+            System.out.println("ROW: id=" + id + ", nome=" + nome + ", created_at=" + created + ", updated_at=" + updated);
+
+            Cliente c = new Cliente();
+            c.setId(id);
+            c.setNome(nome);
+            c.setCreatedAt(created);
+            c.setUpdatedAt(updated);
+            lista.add(c);
         }
-        return lista;
+        System.out.println("DEBUG: listar() terminou. linhas lidas = " + contador);
+    } catch (SQLException e) {
+        System.err.println("ERROR: listar() - SQLException:");
+        e.printStackTrace();
     }
-
+    return lista;
+}
     // ✅ REMOVER cliente (dados e endereços são removidos automaticamente por ON DELETE CASCADE)
     public void remover(int id) {
         String sql = "DELETE FROM cliente WHERE id = ?";

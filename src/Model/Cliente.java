@@ -27,4 +27,9 @@ public class Cliente {
 
     public Timestamp getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
+
+    @Override
+    public String toString() {
+        return id + " - " + nome;
+    }
 }
