@@ -6,6 +6,7 @@ import View.FormCliente;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
+import javax.swing.JOptionPane;
 
 public class JanelaPrincipal extends Frame {
     private ClienteController controller = new ClienteController();
@@ -69,6 +70,27 @@ public class JanelaPrincipal extends Frame {
 
         atualizarLista();
 
+        listaClientes.addMouseListener(new MouseAdapter() {
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        // e.getClickCount() == 2 => duplo clique
+        if (e.getClickCount() == 2) {
+            int idx = listaClientes.getSelectedIndex();
+            if (idx >= 0) {
+                // Obtem a string completa (não a versão truncada que a List mostra visualmente)
+                // Aqui supondo que você montou a linha como id - nome | email | telefone | cpf
+                String linhaCompleta = controller.listarClientes().get(idx).getId() + " - " 
+                    + controller.listarClientes().get(idx).getNome() + "\n"
+                    + "Email: " + controller.listarClientes().get(idx).getEmail() + "\n"
+                    + "Telefone: " + controller.listarClientes().get(idx).getTelefone() + "\n"
+                    + "CPF/CNPJ: " + controller.listarClientes().get(idx).getCpfCnpj();
+
+                JOptionPane.showMessageDialog(null, linhaCompleta, "Detalhes do Cliente", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+    }
+});
+
         // Eventos
         btnAdd.addActionListener(e -> new FormCliente(this, controller, null));
 
@@ -114,46 +136,47 @@ public class JanelaPrincipal extends Frame {
 
     // Atualiza listagem — monta string explicitamente e imprime debug
     public void atualizarLista() {
-        listaClientes.removeAll();
-        List<Cliente> clientes = controller.listarClientes();
+    listaClientes.removeAll();
+    List<Cliente> clientes = controller.listarClientes();
+    for (Cliente c : clientes) {
+        String nome = c.getNome() == null ? "" : c.getNome();
+        String email = c.getEmail() == null ? "" : c.getEmail();
+        String telefone = c.getTelefone() == null ? "" : c.getTelefone();
+        String cpf = c.getCpfCnpj() == null ? "" : c.getCpfCnpj();
 
-        System.out.println("DEBUG: atualizarLista() - clientes.size() = " + (clientes == null ? 0 : clientes.size()));
+        // Opcional: truncar campos longos (ex.: email) para manter a UI limpa
+        String emailShort = email.length() > 20 ? email.substring(0, 17) + "..." : email;
+        String telShort = telefone.length() > 15 ? telefone.substring(0, 12) + "..." : telefone;
 
-        if (clientes != null) {
-            for (Cliente c : clientes) {
-                // DEBUG: mostrar qual classe está sendo usada em runtime e toString()
-                System.out.println("DEBUG: cliente.getClass().getName() = " + (c == null ? "null" : c.getClass().getName()));
-                System.out.println("DEBUG: cliente.toString() = " + (c == null ? "null" : c.toString()));
+        String linha = String.format("%d - %s | %s | %s", c.getId(), nome, emailShort, telShort, cpf);
+        // Se quiser incluir cpf também:
+        // String linha = String.format("%d - %s | %s | %s | %s", c.getId(), nome, emailShort, telShort, cpf);
 
-                String nome = c.getNome() == null ? "" : c.getNome();
-                String linha = c.getId() + " - " + nome; // formato fixo
-                listaClientes.add(linha);
-            }
-        }
+        listaClientes.add(linha);
     }
+}
 
     private void filtrarLista() {
-        String termo = txtBusca.getText().trim();
-        listaClientes.removeAll();
-        List<Cliente> clientes;
-        if (termo.isEmpty()) {
-            clientes = controller.listarClientes();
-        } else {
-            clientes = controller.buscarClientes(termo);
-        }
-
-        System.out.println("DEBUG: filtrarLista() - termo='" + termo + "', clientes.size()=" + (clientes == null ? 0 : clientes.size()));
-
-        if (clientes != null) {
-            for (Cliente c : clientes) {
-                System.out.println("DEBUG: cliente.getClass().getName() = " + (c == null ? "null" : c.getClass().getName()));
-                System.out.println("DEBUG: cliente.toString() = " + (c == null ? "null" : c.toString()));
-                String nome = c.getNome() == null ? "" : c.getNome();
-                String linha = c.getId() + " - " + nome;
-                listaClientes.add(linha);
-            }
-        }
+    String termo = txtBusca.getText().trim();
+    listaClientes.removeAll();
+    List<Cliente> clientes;
+    if (termo.isEmpty()) {
+        clientes = controller.listarClientes();
+    } else {
+        clientes = controller.buscarClientes(termo);
     }
+    for (Cliente c : clientes) {
+        String nome = c.getNome() == null ? "" : c.getNome();
+        String email = c.getEmail() == null ? "" : c.getEmail();
+        String telefone = c.getTelefone() == null ? "" : c.getTelefone();
+
+        String emailShort = email.length() > 20 ? email.substring(0, 17) + "..." : email;
+        String telShort = telefone.length() > 15 ? telefone.substring(0, 12) + "..." : telefone;
+
+        String linha = String.format("%d - %s | %s | %s", c.getId(), nome, emailShort, telShort);
+        listaClientes.add(linha);
+    }
+}
 
     public static void main(String[] args) {
         new JanelaPrincipal();

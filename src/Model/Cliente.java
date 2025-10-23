@@ -8,6 +8,11 @@ public class Cliente {
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
+    // novos campos vindos da tabela dados (1:1)
+    private String cpfCnpj;
+    private String email;
+    private String telefone;
+
     public Cliente() {}
 
     public Cliente(int id, String nome) {
@@ -28,8 +33,17 @@ public class Cliente {
     public Timestamp getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
 
+    public String getCpfCnpj() { return cpfCnpj; }
+    public void setCpfCnpj(String cpfCnpj) { this.cpfCnpj = cpfCnpj; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
+
     @Override
     public String toString() {
-        return id + " - " + nome;
+        return id + " - " + (nome != null ? nome : "");
     }
 }
