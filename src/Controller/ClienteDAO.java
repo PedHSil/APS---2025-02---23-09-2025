@@ -7,7 +7,7 @@ import java.util.List;
 
 public class ClienteDAO {
 
-    // ✅ INSERIR novo cliente
+    //INSERIR novo cliente
     public void salvar(Cliente cliente) {
         String sql = "INSERT INTO cliente (nome) VALUES (?)";
         try (Connection conn = Conexao.getConnection();
@@ -26,7 +26,7 @@ public class ClienteDAO {
         }
     }
 
-    // ✅ LISTAR todos os clientes
+    //LISTAR todos os clientes
    public List<Cliente> listar() {
     List<Cliente> lista = new ArrayList<>();
     String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
@@ -69,7 +69,7 @@ public class ClienteDAO {
     return lista;
 }
 
-    // ✅ REMOVER cliente (dados e endereços são removidos automaticamente por ON DELETE CASCADE)
+    //REMOVER cliente (dados e endereços são removidos automaticamente por ON DELETE CASCADE)
     public void remover(int id) {
         String sql = "DELETE FROM cliente WHERE id = ?";
         try (Connection conn = Conexao.getConnection();
@@ -81,7 +81,7 @@ public class ClienteDAO {
         }
     }
 
-    // ✅ BUSCAR cliente(s) por nome
+    //BUSCAR cliente(s) por nome
     public List<Cliente> buscarPorNome(String nome) {
         List<Cliente> lista = new ArrayList<>();
         String sql = "SELECT id, nome, created_at, updated_at FROM cliente WHERE nome LIKE ?";
@@ -106,7 +106,7 @@ public class ClienteDAO {
         return lista;
     }
 
-    // ✅ ATUALIZAR nome de um cliente
+    //ATUALIZAR nome de um cliente
     public void atualizar(Cliente c) {
         String sql = "UPDATE cliente SET nome = ? WHERE id = ?";
         try (Connection conn = Conexao.getConnection();
@@ -120,7 +120,7 @@ public class ClienteDAO {
         }
     }
 
-    // ✅ BUSCAR cliente por ID
+    //BUSCAR cliente por ID
     public Cliente buscarPorId(int id) {
     String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
                  "d.cpf_cnpj, d.email, d.telefone " +
