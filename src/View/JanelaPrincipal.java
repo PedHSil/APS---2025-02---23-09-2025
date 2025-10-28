@@ -3,35 +3,38 @@ package View;
 import Controller.ClienteController;
 import Model.Cliente;
 import View.FormCliente;
+
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 
 public class JanelaPrincipal extends Frame {
     private ClienteController controller = new ClienteController();
-    private java.awt.List listaClientes = new java.awt.List();
+    private java.awt.List lista = new java.awt.List();
     private TextField txtBusca = new TextField(20);
+
+    // mantém a lista atualmente exibida (com ou sem filtro)
+    private List<Cliente> listaAtual = new ArrayList<>();
 
     public JanelaPrincipal() {
         setTitle("Clientes - Escritório de Arquitetura");
         setSize(600, 500);
         setLayout(new BorderLayout(10, 10));
 
-        // Tema escuro
         Color corFundo = new Color(30, 30, 30);
         Color corTexto = Color.WHITE;
         Color corListaFundo = new Color(45, 45, 45);
         Color corBotaoFiltrar = new Color(70, 130, 180);
 
         setBackground(corFundo);
-
         Font fontePadrao = new Font("Century Gothic", Font.PLAIN, 14);
         setFont(fontePadrao);
 
-        listaClientes.setBackground(corListaFundo);
-        listaClientes.setForeground(corTexto);
-        listaClientes.setFont(fontePadrao);
+        lista.setBackground(corListaFundo);
+        lista.setForeground(corTexto);
+        lista.setFont(fontePadrao);
 
         txtBusca.setBackground(corListaFundo);
         txtBusca.setForeground(corTexto);
@@ -52,73 +55,55 @@ public class JanelaPrincipal extends Frame {
 
         Panel botoes = new Panel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         botoes.setBackground(corFundo);
-
         Button btnAdd = new Button("Adicionar");
         Button btnRemover = new Button("Remover");
         Button btnEditar = new Button("Editar");
-
         btnAdd.setForeground(Color.BLACK);
         btnRemover.setForeground(Color.BLACK);
         btnEditar.setForeground(Color.BLACK);
-
         botoes.add(btnAdd);
         botoes.add(btnRemover);
         botoes.add(btnEditar);
 
-        add(listaClientes, BorderLayout.CENTER);
+        add(lista, BorderLayout.CENTER);
         add(botoes, BorderLayout.SOUTH);
 
-        atualizarLista();
+        atualizarLista(); // carrega sem filtro
 
-        listaClientes.addMouseListener(new MouseAdapter() {
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        // e.getClickCount() == 2 => duplo clique
-        if (e.getClickCount() == 2) {
-            int idx = listaClientes.getSelectedIndex();
-            if (idx >= 0) {
-                // Obtem a string completa (não a versão truncada que a List mostra visualmente)
-                // Aqui supondo que você montou a linha como id - nome | email | telefone | cpf
-                String linhaCompleta = controller.listarClientes().get(idx).getId() + " - " 
-                    + controller.listarClientes().get(idx).getNome() + "\n"
-                    + "Email: " + controller.listarClientes().get(idx).getEmail() + "\n"
-                    + "Telefone: " + controller.listarClientes().get(idx).getTelefone() + "\n"
-                    + "CPF/CNPJ: " + controller.listarClientes().get(idx).getCpfCnpj();
-
-                JOptionPane.showMessageDialog(null, linhaCompleta, "Detalhes do Cliente", JOptionPane.INFORMATION_MESSAGE);
-            }
-        }
-    }
-});
-
-        // Eventos
-        btnAdd.addActionListener(e -> new FormCliente(this, controller, null));
-
-        btnRemover.addActionListener(e -> {
-            int idx = listaClientes.getSelectedIndex();
-            if (idx >= 0) {
-                String linha = listaClientes.getSelectedItem();
-                try {
-                    int id = Integer.parseInt(linha.split(" - ", 2)[0]);
-                    controller.removerCliente(id);
-                    atualizarLista();
-                } catch (NumberFormatException ex) {
-                    System.err.println("Erro ao converter id: '" + linha + "'");
+        // Duplo clique usa a lista que está NA TELA (listaAtual)
+        lista.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int idx = lista.getSelectedIndex();
+                    if (idx >= 0 && idx < listaAtual.size()) {
+                        Cliente c = listaAtual.get(idx);
+                        String linhaCompleta = c.getId() + " - " + (c.getNome() == null ? "" : c.getNome())
+                                + "\nEmail: " + (c.getEmail() == null ? "" : c.getEmail())
+                                + "\nTelefone: " + (c.getTelefone() == null ? "" : c.getTelefone())
+                                + "\nCPF/CNPJ: " + (c.getCpfCnpj() == null ? "" : c.getCpfCnpj());
+                        JOptionPane.showMessageDialog(null, linhaCompleta, "Detalhes do Cliente", JOptionPane.INFORMATION_MESSAGE);
+                    }
                 }
             }
         });
 
+        btnAdd.addActionListener(e -> new FormCliente(this, controller, null));
+
+        btnRemover.addActionListener(e -> {
+            int idx = lista.getSelectedIndex();
+            if (idx >= 0 && idx < listaAtual.size()) {
+                Cliente c = listaAtual.get(idx);
+                controller.removerCliente(c.getId());
+                atualizarLista();
+            }
+        });
+
         btnEditar.addActionListener(e -> {
-            int idx = listaClientes.getSelectedIndex();
-            if (idx >= 0) {
-                String linha = listaClientes.getSelectedItem();
-                try {
-                    int id = Integer.parseInt(linha.split(" - ", 2)[0]);
-                    Cliente c = controller.buscarClientePorId(id);
-                    new FormCliente(this, controller, c);
-                } catch (NumberFormatException ex) {
-                    System.err.println("Erro ao converter id: '" + linha + "'");
-                }
+            int idx = lista.getSelectedIndex();
+            if (idx >= 0 && idx < listaAtual.size()) {
+                Cliente c = listaAtual.get(idx);
+                Cliente completo = controller.buscarClientePorId(c.getId());
+                new FormCliente(this, controller, completo);
             }
         });
 
@@ -126,59 +111,42 @@ public class JanelaPrincipal extends Frame {
         txtBusca.addActionListener(e -> filtrarLista());
 
         addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                dispose();
-            }
+            public void windowClosing(WindowEvent e) { dispose(); }
         });
 
         setVisible(true);
     }
 
-    // Atualiza listagem — monta string explicitamente e imprime debug
+    // Lista sem filtro
     public void atualizarLista() {
-    listaClientes.removeAll();
-    List<Cliente> clientes = controller.listarClientes();
-    for (Cliente c : clientes) {
-        String nome = c.getNome() == null ? "" : c.getNome();
-        String email = c.getEmail() == null ? "" : c.getEmail();
-        String telefone = c.getTelefone() == null ? "" : c.getTelefone();
-        String cpf = c.getCpfCnpj() == null ? "" : c.getCpfCnpj();
-
-        // Opcional: truncar campos longos (ex.: email) para manter a UI limpa
-        String emailShort = email.length() > 20 ? email.substring(0, 17) + "..." : email;
-        String telShort = telefone.length() > 15 ? telefone.substring(0, 12) + "..." : telefone;
-
-        String linha = String.format("%d - %s | %s | %s", c.getId(), nome, emailShort, telShort, cpf);
-        // Se quiser incluir cpf também:
-        // String linha = String.format("%d - %s | %s | %s | %s", c.getId(), nome, emailShort, telShort, cpf);
-
-        listaClientes.add(linha);
+        lista.removeAll();
+        listaAtual = controller.listarClientes();
+        for (Cliente c : listaAtual) adicionarLinha(c);
+        validate(); repaint();
     }
-}
 
+    // Lista com filtro (usa buscarPorTermoCompleto)
     private void filtrarLista() {
-    String termo = txtBusca.getText().trim();
-    listaClientes.removeAll();
-    List<Cliente> clientes;
-    if (termo.isEmpty()) {
-        clientes = controller.listarClientes();
-    } else {
-        clientes = controller.buscarClientes(termo);
+        String termo = txtBusca.getText().trim();
+        lista.removeAll();
+        if (termo.isEmpty()) {
+            listaAtual = controller.listarClientes();
+        } else {
+            listaAtual = controller.buscarClientes(termo);
+        }
+        for (Cliente c : listaAtual) adicionarLinha(c);
+        validate(); repaint();
     }
-    for (Cliente c : clientes) {
+
+    private void adicionarLinha(Cliente c) {
         String nome = c.getNome() == null ? "" : c.getNome();
         String email = c.getEmail() == null ? "" : c.getEmail();
         String telefone = c.getTelefone() == null ? "" : c.getTelefone();
-
         String emailShort = email.length() > 20 ? email.substring(0, 17) + "..." : email;
         String telShort = telefone.length() > 15 ? telefone.substring(0, 12) + "..." : telefone;
-
         String linha = String.format("%d - %s | %s | %s", c.getId(), nome, emailShort, telShort);
-        listaClientes.add(linha);
+        lista.add(linha);
     }
-}
 
-    public static void main(String[] args) {
-        new JanelaPrincipal();
-    }
+    public static void main(String[] args) { new JanelaPrincipal(); }
 }
