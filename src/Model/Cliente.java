@@ -18,10 +18,10 @@ public class Cliente {
     // relação 1:1 (Dados)
     private Dados dados;
 
-    // 🔄 Compat: ainda mantemos um "endereco principal" para a UI atual
+    //Compat: ainda mantemos um "endereco principal" para a UI atual
     private Endereco endereco;
 
-    // ✅ Novo: relação 1:N (vários endereços)
+    //Novo: relação 1:N (vários endereços)
     private List<Endereco> enderecos = new ArrayList<>();
 
     public Cliente() {}
