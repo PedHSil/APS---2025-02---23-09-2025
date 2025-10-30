@@ -7,21 +7,89 @@ import Model.Endereco;
 import java.sql.*;
 import java.util.*;
 
+/**
+ * ClienteDAO atualizado: métodos declaram throws SQLException
+ * e operação de salvar realiza transação (cliente + dados + endereco).
+ */
 public class ClienteDAO {
 
-    public void salvar(Cliente cliente) {
-        String sql = "INSERT INTO cliente (nome) VALUES (?)";
-        try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, cliente.getNome());
-            stmt.executeUpdate();
-            try (ResultSet keys = stmt.getGeneratedKeys()) {
-                if (keys.next()) cliente.setId(keys.getInt(1));
+    /**
+     * Salva cliente + dados + um endereço principal em transação.
+     * Lança SQLException em caso de erro para o controller tratar.
+     */
+    public void salvar(Cliente cliente) throws SQLException {
+        String sqlCliente = "INSERT INTO cliente (nome) VALUES (?)";
+        String sqlDados = "INSERT INTO dados (cliente_id, cpf_cnpj, email, telefone) VALUES (?, ?, ?, ?)";
+        String sqlEndereco = "INSERT INTO endereco (cliente_id, tipo, logradouro, numero, complemento, bairro, cidade, estado, cep, pais) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        Connection conn = null;
+        try {
+            conn = Conexao.getConnection();
+            conn.setAutoCommit(false); // inicia transação
+
+            // inserir cliente
+            try (PreparedStatement stmt = conn.prepareStatement(sqlCliente, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, cliente.getNome());
+                stmt.executeUpdate();
+                try (ResultSet keys = stmt.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        cliente.setId(keys.getInt(1));
+                    } else {
+                        throw new SQLException("Falha ao obter ID gerado para cliente.");
+                    }
+                }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+
+            // inserir dados (se houver)
+            Dados d = cliente.getDados();
+            if (d != null) {
+                try (PreparedStatement stmtDados = conn.prepareStatement(sqlDados, Statement.RETURN_GENERATED_KEYS)) {
+                    stmtDados.setInt(1, cliente.getId());
+                    stmtDados.setString(2, d.getCpfCnpj());
+                    stmtDados.setString(3, d.getEmail());
+                    stmtDados.setString(4, d.getTelefone());
+                    stmtDados.executeUpdate();
+                    try (ResultSet keys = stmtDados.getGeneratedKeys()) {
+                        if (keys.next()) d.setId(keys.getInt(1));
+                    }
+                }
+            }
+
+            // inserir endereço principal (se existir)
+            Endereco e = cliente.getEndereco();
+            if (e != null) {
+                try (PreparedStatement stmtEnd = conn.prepareStatement(sqlEndereco, Statement.RETURN_GENERATED_KEYS)) {
+                    stmtEnd.setInt(1, cliente.getId());
+                    stmtEnd.setString(2, e.getTipo());
+                    stmtEnd.setString(3, e.getLogradouro());
+                    stmtEnd.setString(4, e.getNumero());
+                    stmtEnd.setString(5, e.getComplemento());
+                    stmtEnd.setString(6, e.getBairro());
+                    stmtEnd.setString(7, e.getCidade());
+                    stmtEnd.setString(8, e.getEstado());
+                    stmtEnd.setString(9, e.getCep());
+                    stmtEnd.setString(10, e.getPais());
+                    stmtEnd.executeUpdate();
+                    try (ResultSet keys = stmtEnd.getGeneratedKeys()) {
+                        if (keys.next()) e.setId(keys.getInt(1));
+                    }
+                }
+            }
+
+            conn.commit();
+        } catch (SQLException ex) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException rbe) { /* fallback: nada */ }
+            }
+            throw ex; // relança para controller tratar
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
+        }
     }
 
-    public List<Cliente> listar() {
+    public List<Cliente> listar() throws SQLException {
         List<Cliente> lista = new ArrayList<>();
         String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
                      "d.cpf_cnpj, d.email, d.telefone " +
@@ -36,25 +104,34 @@ public class ClienteDAO {
                 c.setNome(rs.getString("nome"));
                 c.setCreatedAt(rs.getTimestamp("created_at"));
                 c.setUpdatedAt(rs.getTimestamp("updated_at"));
-                c.setCpfCnpj(rs.getString("cpf_cnpj"));
-                c.setEmail(rs.getString("email"));
-                c.setTelefone(rs.getString("telefone"));
+
+                Dados d = new Dados();
+                d.setCpfCnpj(rs.getString("cpf_cnpj"));
+                d.setEmail(rs.getString("email"));
+                d.setTelefone(rs.getString("telefone"));
+                c.setDados(d);
+
+                // espelha para os campos que a UI usa (compatibilidade)
+                c.setCpfCnpj(d.getCpfCnpj());
+                c.setEmail(d.getEmail());
+                c.setTelefone(d.getTelefone());
+
                 lista.add(c);
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        }
         return lista;
     }
 
-    public void remover(int id) {
+    public void remover(int id) throws SQLException {
         String sql = "DELETE FROM cliente WHERE id = ?";
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
+        }
     }
 
-    public List<Cliente> buscarPorNome(String nome) {
+    public List<Cliente> buscarPorNome(String nome) throws SQLException {
         List<Cliente> lista = new ArrayList<>();
         String sql = "SELECT id, nome, created_at, updated_at FROM cliente WHERE nome LIKE ?";
         try (Connection conn = Conexao.getConnection();
@@ -70,12 +147,12 @@ public class ClienteDAO {
                     lista.add(c);
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        }
         return lista;
     }
 
     // Busca por QUALQUER termo (nome/email/telefone/cpf_cnpj e endereço) retornando cliente completo
-    public List<Cliente> buscarPorTermoCompleto(String termo) {
+    public List<Cliente> buscarPorTermoCompleto(String termo) throws SQLException {
         String sql = """
             SELECT DISTINCT
                 c.id AS c_id, c.nome AS c_nome, c.created_at AS c_created_at, c.updated_at AS c_updated_at,
@@ -158,22 +235,21 @@ public class ClienteDAO {
                     }
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
-
+        }
         return new ArrayList<>(mapa.values());
     }
 
-    public void atualizar(Cliente c) {
+    public void atualizar(Cliente c) throws SQLException {
         String sql = "UPDATE cliente SET nome = ? WHERE id = ?";
         try (Connection conn = Conexao.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, c.getNome());
             stmt.setInt(2, c.getId());
             stmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
+        }
     }
 
-    public Cliente buscarPorId(int id) {
+    public Cliente buscarPorId(int id) throws SQLException {
         String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
                      "d.cpf_cnpj, d.email, d.telefone " +
                      "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id WHERE c.id = ?";
@@ -187,13 +263,18 @@ public class ClienteDAO {
                     c.setNome(rs.getString("nome"));
                     c.setCreatedAt(rs.getTimestamp("created_at"));
                     c.setUpdatedAt(rs.getTimestamp("updated_at"));
-                    c.setCpfCnpj(rs.getString("cpf_cnpj"));
-                    c.setEmail(rs.getString("email"));
-                    c.setTelefone(rs.getString("telefone"));
+                    Dados d = new Dados();
+                    d.setCpfCnpj(rs.getString("cpf_cnpj"));
+                    d.setEmail(rs.getString("email"));
+                    d.setTelefone(rs.getString("telefone"));
+                    c.setDados(d);
+                    c.setCpfCnpj(d.getCpfCnpj());
+                    c.setEmail(d.getEmail());
+                    c.setTelefone(d.getTelefone());
                     return c;
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        }
         return null;
     }
 }

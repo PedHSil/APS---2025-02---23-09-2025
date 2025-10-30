@@ -90,22 +90,33 @@ public class JanelaPrincipal extends Frame {
         btnAdd.addActionListener(e -> new FormCliente(this, controller, null));
 
         btnRemover.addActionListener(e -> {
-            int idx = lista.getSelectedIndex();
-            if (idx >= 0 && idx < listaAtual.size()) {
-                Cliente c = listaAtual.get(idx);
-                controller.removerCliente(c.getId());
-                atualizarLista();
-            }
-        });
+    int idx = lista.getSelectedIndex();
+    if (idx >= 0 && idx < listaAtual.size()) {
+        Cliente c = listaAtual.get(idx);
+        try {
+            controller.removerCliente(c.getId());
+            atualizarLista();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erro ao remover cliente:\n" + ex.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+});
 
-        btnEditar.addActionListener(e -> {
-            int idx = lista.getSelectedIndex();
-            if (idx >= 0 && idx < listaAtual.size()) {
-                Cliente c = listaAtual.get(idx);
-                Cliente completo = controller.buscarClientePorId(c.getId());
-                new FormCliente(this, controller, completo);
-            }
-        });
+btnEditar.addActionListener(e -> {
+    int idx = lista.getSelectedIndex();
+    if (idx >= 0 && idx < listaAtual.size()) {
+        Cliente c = listaAtual.get(idx);
+        try {
+            Cliente completo = controller.buscarClientePorId(c.getId());
+            new FormCliente(this, controller, completo);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erro ao buscar cliente:\n" + ex.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+});
+
 
         btnBuscar.addActionListener(e -> filtrarLista());
         txtBusca.addActionListener(e -> filtrarLista());
@@ -117,26 +128,39 @@ public class JanelaPrincipal extends Frame {
         setVisible(true);
     }
 
-    // Lista sem filtro
-    public void atualizarLista() {
-        lista.removeAll();
+   // Lista sem filtro
+public void atualizarLista() {
+    lista.removeAll();
+    try {
         listaAtual = controller.listarClientes();
         for (Cliente c : listaAtual) adicionarLinha(c);
-        validate(); repaint();
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Erro ao listar clientes:\n" + e.getMessage(),
+                "Erro", JOptionPane.ERROR_MESSAGE);
     }
+    validate();
+    repaint();
+}
 
-    // Lista com filtro (usa buscarPorTermoCompleto)
-    private void filtrarLista() {
-        String termo = txtBusca.getText().trim();
-        lista.removeAll();
+// Lista com filtro (usa buscarPorTermoCompleto)
+private void filtrarLista() {
+    String termo = txtBusca.getText().trim();
+    lista.removeAll();
+    try {
         if (termo.isEmpty()) {
             listaAtual = controller.listarClientes();
         } else {
             listaAtual = controller.buscarClientes(termo);
         }
         for (Cliente c : listaAtual) adicionarLinha(c);
-        validate(); repaint();
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Erro ao buscar clientes:\n" + e.getMessage(),
+                "Erro", JOptionPane.ERROR_MESSAGE);
     }
+    validate();
+    repaint();
+}
+
 
     private void adicionarLinha(Cliente c) {
         String nome = c.getNome() == null ? "" : c.getNome();
