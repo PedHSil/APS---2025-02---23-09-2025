@@ -95,9 +95,18 @@ public class ClienteDAO {
     public List<Cliente> listar() throws SQLException {
         List<Cliente> lista = new ArrayList<>();
         String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
-                "d.cpf_cnpj, d.email, d.telefone " +
-                "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id " +
+                "d.cpf_cnpj, d.email, d.telefone, " +
+                "e.id AS e_id, e.tipo AS e_tipo, e.logradouro AS e_logradouro, e.numero AS e_numero, " +
+                "e.complemento AS e_complemento, e.bairro AS e_bairro, e.cidade AS e_cidade, " +
+                "e.estado AS e_estado, e.cep AS e_cep, e.pais AS e_pais " +
+                "FROM cliente c " +
+                "LEFT JOIN dados d ON d.cliente_id = c.id " +
+                // junta o primeiro endereco (se existir). ORDER BY id LIMIT 1 pode variar por
+                // SGBD; funciona em MySQL/Postgres.
+                "LEFT JOIN endereco e ON e.id = (SELECT id FROM endereco WHERE cliente_id = c.id ORDER BY id LIMIT 1) "
+                +
                 "ORDER BY c.id DESC";
+
         try (Connection conn = Conexao.getConnection();
                 Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
@@ -117,6 +126,22 @@ public class ClienteDAO {
                 c.setCpfCnpj(d.getCpfCnpj());
                 c.setEmail(d.getEmail());
                 c.setTelefone(d.getTelefone());
+
+                Integer eId = (Integer) rs.getObject("e_id");
+                if (eId != null) {
+                    Endereco e = new Endereco();
+                    e.setId(eId);
+                    e.setTipo(rs.getString("e_tipo"));
+                    e.setLogradouro(rs.getString("e_logradouro"));
+                    e.setNumero(rs.getString("e_numero"));
+                    e.setComplemento(rs.getString("e_complemento"));
+                    e.setBairro(rs.getString("e_bairro"));
+                    e.setCidade(rs.getString("e_cidade"));
+                    e.setEstado(rs.getString("e_estado"));
+                    e.setCep(rs.getString("e_cep"));
+                    e.setPais(rs.getString("e_pais"));
+                    c.setEndereco(e);
+                }
 
                 lista.add(c);
             }
@@ -154,63 +179,63 @@ public class ClienteDAO {
     }
 
     public void atualizarClienteCompleto(Cliente cliente) throws SQLException {
-    Connection conn = null;
-    try {
-        conn = Conexao.getConnection();
-        conn.setAutoCommit(false);
+        Connection conn = null;
+        try {
+            conn = Conexao.getConnection();
+            conn.setAutoCommit(false);
 
-        // Atualizar cliente
-        try (PreparedStatement stmt = conn.prepareStatement(
-                "UPDATE cliente SET nome = ? WHERE id = ?")) {
-            stmt.setString(1, cliente.getNome());
-            stmt.setInt(2, cliente.getId());
-            stmt.executeUpdate();
-        }
-
-        // Atualizar dados
-        Dados d = cliente.getDados();
-        if (d != null) {
+            // Atualizar cliente
             try (PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE dados SET cpf_cnpj = ?, email = ?, telefone = ? WHERE cliente_id = ?")) {
-                stmt.setString(1, d.getCpfCnpj());
-                stmt.setString(2, d.getEmail());
-                stmt.setString(3, d.getTelefone());
-                stmt.setInt(4, cliente.getId());
+                    "UPDATE cliente SET nome = ? WHERE id = ?")) {
+                stmt.setString(1, cliente.getNome());
+                stmt.setInt(2, cliente.getId());
                 stmt.executeUpdate();
             }
-        }
 
-        // Atualizar endereço
-        Endereco e = cliente.getEndereco();
-        if (e != null) {
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE endereco SET tipo = ?, logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?, pais = ? WHERE id = ?")) {
-                stmt.setString(1, e.getTipo());
-                stmt.setString(2, e.getLogradouro());
-                stmt.setString(3, e.getNumero());
-                stmt.setString(4, e.getComplemento());
-                stmt.setString(5, e.getBairro());
-                stmt.setString(6, e.getCidade());
-                stmt.setString(7, e.getEstado());
-                stmt.setString(8, e.getCep());
-                stmt.setString(9, e.getPais());
-                stmt.setInt(10, e.getId());
-                stmt.executeUpdate();
+            // Atualizar dados
+            Dados d = cliente.getDados();
+            if (d != null) {
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "UPDATE dados SET cpf_cnpj = ?, email = ?, telefone = ? WHERE cliente_id = ?")) {
+                    stmt.setString(1, d.getCpfCnpj());
+                    stmt.setString(2, d.getEmail());
+                    stmt.setString(3, d.getTelefone());
+                    stmt.setInt(4, cliente.getId());
+                    stmt.executeUpdate();
+                }
             }
-        }
 
-        conn.commit();
-    } catch (SQLException ex) {
-        if (conn != null) conn.rollback();
-        throw ex;
-    } finally {
-        if (conn != null) {
-            conn.setAutoCommit(true);
-            conn.close();
+            // Atualizar endereço
+            Endereco e = cliente.getEndereco();
+            if (e != null) {
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "UPDATE endereco SET tipo = ?, logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?, pais = ? WHERE id = ?")) {
+                    stmt.setString(1, e.getTipo());
+                    stmt.setString(2, e.getLogradouro());
+                    stmt.setString(3, e.getNumero());
+                    stmt.setString(4, e.getComplemento());
+                    stmt.setString(5, e.getBairro());
+                    stmt.setString(6, e.getCidade());
+                    stmt.setString(7, e.getEstado());
+                    stmt.setString(8, e.getCep());
+                    stmt.setString(9, e.getPais());
+                    stmt.setInt(10, e.getId());
+                    stmt.executeUpdate();
+                }
+            }
+
+            conn.commit();
+        } catch (SQLException ex) {
+            if (conn != null)
+                conn.rollback();
+            throw ex;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
         }
     }
-}
-
 
     // Busca por termo (nome/email/telefone/cpf_cnpj e endereço)
     public List<Cliente> buscarPorTermoCompleto(String termo) throws SQLException {
@@ -316,53 +341,52 @@ public class ClienteDAO {
     }
 
     public Cliente buscarPorId(int id) throws SQLException {
-    String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
-             "d.cpf_cnpj, d.email, d.telefone, " +
-             "e.id AS e_id, e.tipo, e.logradouro, e.numero, " +
-             "e.complemento, e.bairro, e.cidade, e.estado, e.cep, e.pais " +
-             "FROM cliente c " +
-             "LEFT JOIN dados d ON d.cliente_id = c.id " +
-             "LEFT JOIN endereco e ON e.cliente_id = c.id " +
-             "WHERE c.id = ?";
+        String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
+                "d.cpf_cnpj, d.email, d.telefone, " +
+                "e.id AS e_id, e.tipo, e.logradouro, e.numero, " +
+                "e.complemento, e.bairro, e.cidade, e.estado, e.cep, e.pais " +
+                "FROM cliente c " +
+                "LEFT JOIN dados d ON d.cliente_id = c.id " +
+                "LEFT JOIN endereco e ON e.cliente_id = c.id " +
+                "WHERE c.id = ?";
 
-    try (Connection conn = Conexao.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setInt(1, id);
-        try (ResultSet rs = stmt.executeQuery()) {
-            if (rs.next()) {
-                Cliente c = new Cliente();
-                c.setId(rs.getInt("id"));
-                c.setNome(rs.getString("nome"));
-                // preencher Dados
-                Dados d = new Dados();
-                d.setCpfCnpj(rs.getString("cpf_cnpj"));
-                d.setEmail(rs.getString("email"));
-                d.setTelefone(rs.getString("telefone"));
-                c.setDados(d);
+        try (Connection conn = Conexao.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Cliente c = new Cliente();
+                    c.setId(rs.getInt("id"));
+                    c.setNome(rs.getString("nome"));
+                    // preencher Dados
+                    Dados d = new Dados();
+                    d.setCpfCnpj(rs.getString("cpf_cnpj"));
+                    d.setEmail(rs.getString("email"));
+                    d.setTelefone(rs.getString("telefone"));
+                    c.setDados(d);
 
-                // preencher Endereço
-                Integer eId = (Integer) rs.getObject("e_id");
-                if (eId != null) {
-                    Endereco e = new Endereco();
-                    e.setId(eId);
-                    e.setTipo(rs.getString("tipo"));
-                    e.setLogradouro(rs.getString("logradouro"));
-                    e.setNumero(rs.getString("numero"));
-                    e.setComplemento(rs.getString("complemento"));
-                    e.setBairro(rs.getString("bairro"));
-                    e.setCidade(rs.getString("cidade"));
-                    e.setEstado(rs.getString("estado"));
-                    e.setCep(rs.getString("cep"));
-                    e.setPais(rs.getString("pais"));
-                    c.setEndereco(e);
+                    // preencher Endereço
+                    Integer eId = (Integer) rs.getObject("e_id");
+                    if (eId != null) {
+                        Endereco e = new Endereco();
+                        e.setId(eId);
+                        e.setTipo(rs.getString("tipo"));
+                        e.setLogradouro(rs.getString("logradouro"));
+                        e.setNumero(rs.getString("numero"));
+                        e.setComplemento(rs.getString("complemento"));
+                        e.setBairro(rs.getString("bairro"));
+                        e.setCidade(rs.getString("cidade"));
+                        e.setEstado(rs.getString("estado"));
+                        e.setCep(rs.getString("cep"));
+                        e.setPais(rs.getString("pais"));
+                        c.setEndereco(e);
+                    }
+
+                    return c;
                 }
-
-                return c;
             }
         }
+        return null;
     }
-    return null;
-}
-
 
 }
