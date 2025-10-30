@@ -90,37 +90,82 @@ public class ClienteDAO {
     }
 
     public List<Cliente> listar() throws SQLException {
-        List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
-                     "d.cpf_cnpj, d.email, d.telefone " +
-                     "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id " +
-                     "ORDER BY c.id DESC";
-        try (Connection conn = Conexao.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                Cliente c = new Cliente();
-                c.setId(rs.getInt("id"));
-                c.setNome(rs.getString("nome"));
-                c.setCreatedAt(rs.getTimestamp("created_at"));
-                c.setUpdatedAt(rs.getTimestamp("updated_at"));
+    String sql = """
+        SELECT DISTINCT
+            c.id AS c_id, c.nome AS c_nome, c.created_at AS c_created_at, c.updated_at AS c_updated_at,
+            d.id AS d_id, d.cpf_cnpj AS d_cpf_cnpj, d.email AS d_email, d.telefone AS d_telefone,
+            e.id AS e_id, e.tipo AS e_tipo, e.logradouro AS e_logradouro, e.numero AS e_numero,
+            e.complemento AS e_complemento, e.bairro AS e_bairro, e.cidade AS e_cidade,
+            e.estado AS e_estado, e.cep AS e_cep, e.pais AS e_pais
+        FROM cliente c
+        LEFT JOIN dados d    ON d.cliente_id = c.id
+        LEFT JOIN endereco e ON e.cliente_id = c.id
+        ORDER BY c.id DESC
+    """;
 
-                Dados d = new Dados();
-                d.setCpfCnpj(rs.getString("cpf_cnpj"));
-                d.setEmail(rs.getString("email"));
-                d.setTelefone(rs.getString("telefone"));
-                c.setDados(d);
+    Map<Integer, Cliente> mapa = new LinkedHashMap<>();
 
-                // espelha para os campos que a UI usa (compatibilidade)
-                c.setCpfCnpj(d.getCpfCnpj());
-                c.setEmail(d.getEmail());
-                c.setTelefone(d.getTelefone());
+    try (Connection conn = Conexao.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
 
-                lista.add(c);
+        while (rs.next()) {
+            int id = rs.getInt("c_id");
+            Cliente cli = mapa.get(id);
+
+            if (cli == null) {
+                cli = new Cliente();
+                cli.setId(id);
+                cli.setNome(rs.getString("c_nome"));
+                cli.setCreatedAt(rs.getTimestamp("c_created_at"));
+                cli.setUpdatedAt(rs.getTimestamp("c_updated_at"));
+
+                // dados
+                Integer dId = (Integer) rs.getObject("d_id");
+                if (dId != null) {
+                    Dados d = new Dados();
+                    d.setId(dId);
+                    d.setCpfCnpj(rs.getString("d_cpf_cnpj"));
+                    d.setEmail(rs.getString("d_email"));
+                    d.setTelefone(rs.getString("d_telefone"));
+                    cli.setDados(d);
+
+                    cli.setCpfCnpj(d.getCpfCnpj());
+                    cli.setEmail(d.getEmail());
+                    cli.setTelefone(d.getTelefone());
+                }
+
+                mapa.put(id, cli);
+            }
+
+            // endereço 1:N
+            Integer eId = (Integer) rs.getObject("e_id");
+            if (eId != null) {
+                Endereco e = new Endereco();
+                e.setId(eId);
+                e.setTipo(rs.getString("e_tipo"));
+                e.setLogradouro(rs.getString("e_logradouro"));
+                e.setNumero(rs.getString("e_numero"));
+                e.setComplemento(rs.getString("e_complemento"));
+                e.setBairro(rs.getString("e_bairro"));
+                e.setCidade(rs.getString("e_cidade"));
+                e.setEstado(rs.getString("e_estado"));
+                e.setCep(rs.getString("e_cep"));
+                e.setPais(rs.getString("e_pais"));
+
+                // evita duplicado
+                boolean exists = false;
+                for (Endereco ex : mapa.get(id).getEnderecos()) {
+                    if (Objects.equals(ex.getId(), e.getId())) { exists = true; break; }
+                }
+                if (!exists) mapa.get(id).getEnderecos().add(e);
             }
         }
-        return lista;
     }
+
+    return new ArrayList<>(mapa.values());
+}
+
 
     public void remover(int id) throws SQLException {
         String sql = "DELETE FROM cliente WHERE id = ?";
