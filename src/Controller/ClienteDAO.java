@@ -257,31 +257,53 @@ public class ClienteDAO {
     }
 
     public Cliente buscarPorId(int id) throws SQLException {
-        String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
-                "d.cpf_cnpj, d.email, d.telefone " +
-                "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id WHERE c.id = ?";
-        try (Connection conn = Conexao.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Cliente c = new Cliente();
-                    c.setId(rs.getInt("id"));
-                    c.setNome(rs.getString("nome"));
-                    c.setCreatedAt(rs.getTimestamp("created_at"));
-                    c.setUpdatedAt(rs.getTimestamp("updated_at"));
-                    Dados d = new Dados();
-                    d.setCpfCnpj(rs.getString("cpf_cnpj"));
-                    d.setEmail(rs.getString("email"));
-                    d.setTelefone(rs.getString("telefone"));
-                    c.setDados(d);
-                    c.setCpfCnpj(d.getCpfCnpj());
-                    c.setEmail(d.getEmail());
-                    c.setTelefone(d.getTelefone());
-                    return c;
+    String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
+             "d.cpf_cnpj, d.email, d.telefone, " +
+             "e.id AS e_id, e.tipo, e.logradouro, e.numero, " +
+             "e.complemento, e.bairro, e.cidade, e.estado, e.cep, e.pais " +
+             "FROM cliente c " +
+             "LEFT JOIN dados d ON d.cliente_id = c.id " +
+             "LEFT JOIN endereco e ON e.cliente_id = c.id " +
+             "WHERE c.id = ?";
+
+    try (Connection conn = Conexao.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setInt(1, id);
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                Cliente c = new Cliente();
+                c.setId(rs.getInt("id"));
+                c.setNome(rs.getString("nome"));
+                // preencher Dados
+                Dados d = new Dados();
+                d.setCpfCnpj(rs.getString("cpf_cnpj"));
+                d.setEmail(rs.getString("email"));
+                d.setTelefone(rs.getString("telefone"));
+                c.setDados(d);
+
+                // preencher Endereço
+                Integer eId = (Integer) rs.getObject("e_id");
+                if (eId != null) {
+                    Endereco e = new Endereco();
+                    e.setId(eId);
+                    e.setTipo(rs.getString("tipo"));
+                    e.setLogradouro(rs.getString("logradouro"));
+                    e.setNumero(rs.getString("numero"));
+                    e.setComplemento(rs.getString("complemento"));
+                    e.setBairro(rs.getString("bairro"));
+                    e.setCidade(rs.getString("cidade"));
+                    e.setEstado(rs.getString("estado"));
+                    e.setCep(rs.getString("cep"));
+                    e.setPais(rs.getString("pais"));
+                    c.setEndereco(e);
                 }
+
+                return c;
             }
         }
-        return null;
     }
+    return null;
+}
+
+
 }
