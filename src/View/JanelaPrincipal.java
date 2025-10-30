@@ -68,11 +68,12 @@ public class JanelaPrincipal extends Frame {
         add(lista, BorderLayout.CENTER);
         add(botoes, BorderLayout.SOUTH);
 
-        atualizarLista(); // carrega sem filtro
+        atualizarLista(); 
 
         // Duplo clique usa a lista que está NA TELA (listaAtual)
         lista.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) {
+            @Override
+            public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     int idx = lista.getSelectedIndex();
                     if (idx >= 0 && idx < listaAtual.size()) {
@@ -81,7 +82,8 @@ public class JanelaPrincipal extends Frame {
                                 + "\nEmail: " + (c.getEmail() == null ? "" : c.getEmail())
                                 + "\nTelefone: " + (c.getTelefone() == null ? "" : c.getTelefone())
                                 + "\nCPF/CNPJ: " + (c.getCpfCnpj() == null ? "" : c.getCpfCnpj());
-                        JOptionPane.showMessageDialog(null, linhaCompleta, "Detalhes do Cliente", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(null, linhaCompleta, "Detalhes do Cliente",
+                                JOptionPane.INFORMATION_MESSAGE);
                     }
                 }
             }
@@ -90,77 +92,79 @@ public class JanelaPrincipal extends Frame {
         btnAdd.addActionListener(e -> new FormCliente(this, controller, null));
 
         btnRemover.addActionListener(e -> {
-    int idx = lista.getSelectedIndex();
-    if (idx >= 0 && idx < listaAtual.size()) {
-        Cliente c = listaAtual.get(idx);
-        try {
-            controller.removerCliente(c.getId());
-            atualizarLista();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erro ao remover cliente:\n" + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-});
+            int idx = lista.getSelectedIndex();
+            if (idx >= 0 && idx < listaAtual.size()) {
+                Cliente c = listaAtual.get(idx);
+                try {
+                    controller.removerCliente(c.getId());
+                    atualizarLista();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Erro ao remover cliente:\n" + ex.getMessage(),
+                            "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
-btnEditar.addActionListener(e -> {
-    int idx = lista.getSelectedIndex();
-    if (idx >= 0 && idx < listaAtual.size()) {
-        Cliente c = listaAtual.get(idx);
-        try {
-            Cliente completo = controller.buscarClientePorId(c.getId());
-            new FormCliente(this, controller, completo);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erro ao buscar cliente:\n" + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-});
-
+        btnEditar.addActionListener(e -> {
+            int idx = lista.getSelectedIndex();
+            if (idx >= 0 && idx < listaAtual.size()) {
+                Cliente c = listaAtual.get(idx);
+                try {
+                    Cliente completo = controller.buscarClientePorId(c.getId());
+                    new FormCliente(this, controller, completo);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Erro ao buscar cliente:\n" + ex.getMessage(),
+                            "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
         btnBuscar.addActionListener(e -> filtrarLista());
         txtBusca.addActionListener(e -> filtrarLista());
 
         addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) { dispose(); }
+            public void windowClosing(WindowEvent e) {
+                dispose();
+            }
         });
 
         setVisible(true);
     }
 
-   // Lista sem filtro
-public void atualizarLista() {
-    lista.removeAll();
-    try {
-        listaAtual = controller.listarClientes();
-        for (Cliente c : listaAtual) adicionarLinha(c);
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Erro ao listar clientes:\n" + e.getMessage(),
-                "Erro", JOptionPane.ERROR_MESSAGE);
-    }
-    validate();
-    repaint();
-}
-
-// Lista com filtro (usa buscarPorTermoCompleto)
-private void filtrarLista() {
-    String termo = txtBusca.getText().trim();
-    lista.removeAll();
-    try {
-        if (termo.isEmpty()) {
+    // Lista sem filtro
+    public void atualizarLista() {
+        lista.removeAll();
+        try {
             listaAtual = controller.listarClientes();
-        } else {
-            listaAtual = controller.buscarClientes(termo);
+            for (Cliente c : listaAtual)
+                adicionarLinha(c);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao listar clientes:\n" + e.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
         }
-        for (Cliente c : listaAtual) adicionarLinha(c);
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Erro ao buscar clientes:\n" + e.getMessage(),
-                "Erro", JOptionPane.ERROR_MESSAGE);
+        validate();
+        repaint();
     }
-    validate();
-    repaint();
-}
 
+    // Lista com filtro (usa buscarPorTermoCompleto)
+    private void filtrarLista() {
+        String termo = txtBusca.getText().trim();
+        lista.removeAll();
+        try {
+            if (termo.isEmpty()) {
+                listaAtual = controller.listarClientes();
+            } else {
+                listaAtual = controller.buscarClientes(termo);
+            }
+            for (Cliente c : listaAtual)
+                adicionarLinha(c);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao buscar clientes:\n" + e.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+        validate();
+        repaint();
+    }
 
     private void adicionarLinha(Cliente c) {
         String nome = c.getNome() == null ? "" : c.getNome();
@@ -172,5 +176,7 @@ private void filtrarLista() {
         lista.add(linha);
     }
 
-    public static void main(String[] args) { new JanelaPrincipal(); }
+    public static void main(String[] args) {
+        new JanelaPrincipal();
+    }
 }

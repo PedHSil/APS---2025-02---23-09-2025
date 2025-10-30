@@ -13,10 +13,6 @@ import java.util.*;
  */
 public class ClienteDAO {
 
-    /**
-     * Salva cliente + dados + um endereço principal em transação.
-     * Lança SQLException em caso de erro para o controller tratar.
-     */
     public void salvar(Cliente cliente) throws SQLException {
         String sqlCliente = "INSERT INTO cliente (nome) VALUES (?)";
         String sqlDados = "INSERT INTO dados (cliente_id, cpf_cnpj, email, telefone) VALUES (?, ?, ?, ?)";
@@ -40,7 +36,6 @@ public class ClienteDAO {
                 }
             }
 
-            // inserir dados (se houver)
             Dados d = cliente.getDados();
             if (d != null) {
                 try (PreparedStatement stmtDados = conn.prepareStatement(sqlDados, Statement.RETURN_GENERATED_KEYS)) {
@@ -50,12 +45,12 @@ public class ClienteDAO {
                     stmtDados.setString(4, d.getTelefone());
                     stmtDados.executeUpdate();
                     try (ResultSet keys = stmtDados.getGeneratedKeys()) {
-                        if (keys.next()) d.setId(keys.getInt(1));
+                        if (keys.next())
+                            d.setId(keys.getInt(1));
                     }
                 }
             }
 
-            // inserir endereço principal (se existir)
             Endereco e = cliente.getEndereco();
             if (e != null) {
                 try (PreparedStatement stmtEnd = conn.prepareStatement(sqlEndereco, Statement.RETURN_GENERATED_KEYS)) {
@@ -71,7 +66,8 @@ public class ClienteDAO {
                     stmtEnd.setString(10, e.getPais());
                     stmtEnd.executeUpdate();
                     try (ResultSet keys = stmtEnd.getGeneratedKeys()) {
-                        if (keys.next()) e.setId(keys.getInt(1));
+                        if (keys.next())
+                            e.setId(keys.getInt(1));
                     }
                 }
             }
@@ -79,12 +75,19 @@ public class ClienteDAO {
             conn.commit();
         } catch (SQLException ex) {
             if (conn != null) {
-                try { conn.rollback(); } catch (SQLException rbe) { /* fallback: nada */ }
+                try {
+                    conn.rollback();
+                } catch (SQLException rbe) {
+                    /* fallback: nada */ }
             }
             throw ex; // relança para controller tratar
         } finally {
             if (conn != null) {
-                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException ignored) {
+                }
             }
         }
     }
@@ -92,12 +95,12 @@ public class ClienteDAO {
     public List<Cliente> listar() throws SQLException {
         List<Cliente> lista = new ArrayList<>();
         String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
-                     "d.cpf_cnpj, d.email, d.telefone " +
-                     "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id " +
-                     "ORDER BY c.id DESC";
+                "d.cpf_cnpj, d.email, d.telefone " +
+                "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id " +
+                "ORDER BY c.id DESC";
         try (Connection conn = Conexao.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 Cliente c = new Cliente();
                 c.setId(rs.getInt("id"));
@@ -111,7 +114,6 @@ public class ClienteDAO {
                 d.setTelefone(rs.getString("telefone"));
                 c.setDados(d);
 
-                // espelha para os campos que a UI usa (compatibilidade)
                 c.setCpfCnpj(d.getCpfCnpj());
                 c.setEmail(d.getEmail());
                 c.setTelefone(d.getTelefone());
@@ -125,7 +127,7 @@ public class ClienteDAO {
     public void remover(int id) throws SQLException {
         String sql = "DELETE FROM cliente WHERE id = ?";
         try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         }
@@ -135,7 +137,7 @@ public class ClienteDAO {
         List<Cliente> lista = new ArrayList<>();
         String sql = "SELECT id, nome, created_at, updated_at FROM cliente WHERE nome LIKE ?";
         try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, "%" + nome + "%");
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -151,40 +153,41 @@ public class ClienteDAO {
         return lista;
     }
 
-    // Busca por QUALQUER termo (nome/email/telefone/cpf_cnpj e endereço) retornando cliente completo
+    // Busca por termo (nome/email/telefone/cpf_cnpj e endereço)
     public List<Cliente> buscarPorTermoCompleto(String termo) throws SQLException {
         String sql = """
-            SELECT DISTINCT
-                c.id AS c_id, c.nome AS c_nome, c.created_at AS c_created_at, c.updated_at AS c_updated_at,
-                d.id AS d_id, d.cpf_cnpj AS d_cpf_cnpj, d.email AS d_email, d.telefone AS d_telefone,
-                e.id AS e_id, e.tipo AS e_tipo, e.logradouro AS e_logradouro, e.numero AS e_numero,
-                e.complemento AS e_complemento, e.bairro AS e_bairro, e.cidade AS e_cidade,
-                e.estado AS e_estado, e.cep AS e_cep, e.pais AS e_pais
-            FROM cliente c
-            LEFT JOIN dados d    ON d.cliente_id = c.id
-            LEFT JOIN endereco e ON e.cliente_id = c.id
-            WHERE c.nome       LIKE ?
-               OR d.email      LIKE ?
-               OR d.telefone   LIKE ?
-               OR d.cpf_cnpj   LIKE ?
-               OR e.logradouro LIKE ?
-               OR e.numero     LIKE ?
-               OR e.complemento LIKE ?
-               OR e.bairro     LIKE ?
-               OR e.cidade     LIKE ?
-               OR e.estado     LIKE ?
-               OR e.cep        LIKE ?
-               OR e.pais       LIKE ?
-            ORDER BY c.nome, c.id
-        """;
+                    SELECT DISTINCT
+                        c.id AS c_id, c.nome AS c_nome, c.created_at AS c_created_at, c.updated_at AS c_updated_at,
+                        d.id AS d_id, d.cpf_cnpj AS d_cpf_cnpj, d.email AS d_email, d.telefone AS d_telefone,
+                        e.id AS e_id, e.tipo AS e_tipo, e.logradouro AS e_logradouro, e.numero AS e_numero,
+                        e.complemento AS e_complemento, e.bairro AS e_bairro, e.cidade AS e_cidade,
+                        e.estado AS e_estado, e.cep AS e_cep, e.pais AS e_pais
+                    FROM cliente c
+                    LEFT JOIN dados d    ON d.cliente_id = c.id
+                    LEFT JOIN endereco e ON e.cliente_id = c.id
+                    WHERE c.nome       LIKE ?
+                       OR d.email      LIKE ?
+                       OR d.telefone   LIKE ?
+                       OR d.cpf_cnpj   LIKE ?
+                       OR e.logradouro LIKE ?
+                       OR e.numero     LIKE ?
+                       OR e.complemento LIKE ?
+                       OR e.bairro     LIKE ?
+                       OR e.cidade     LIKE ?
+                       OR e.estado     LIKE ?
+                       OR e.cep        LIKE ?
+                       OR e.pais       LIKE ?
+                    ORDER BY c.nome, c.id
+                """;
 
         Map<Integer, Cliente> mapa = new LinkedHashMap<>();
         String like = "%" + termo + "%";
 
         try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            for (int i = 1; i <= 12; i++) stmt.setString(i, like);
+            for (int i = 1; i <= 12; i++)
+                stmt.setString(i, like);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -229,9 +232,13 @@ public class ClienteDAO {
 
                         boolean exists = false;
                         for (Endereco ex : mapa.get(id).getEnderecos()) {
-                            if (Objects.equals(ex.getId(), e.getId())) { exists = true; break; }
+                            if (Objects.equals(ex.getId(), e.getId())) {
+                                exists = true;
+                                break;
+                            }
                         }
-                        if (!exists) mapa.get(id).getEnderecos().add(e);
+                        if (!exists)
+                            mapa.get(id).getEnderecos().add(e);
                     }
                 }
             }
@@ -242,7 +249,7 @@ public class ClienteDAO {
     public void atualizar(Cliente c) throws SQLException {
         String sql = "UPDATE cliente SET nome = ? WHERE id = ?";
         try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, c.getNome());
             stmt.setInt(2, c.getId());
             stmt.executeUpdate();
@@ -251,10 +258,10 @@ public class ClienteDAO {
 
     public Cliente buscarPorId(int id) throws SQLException {
         String sql = "SELECT c.id, c.nome, c.created_at, c.updated_at, " +
-                     "d.cpf_cnpj, d.email, d.telefone " +
-                     "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id WHERE c.id = ?";
+                "d.cpf_cnpj, d.email, d.telefone " +
+                "FROM cliente c LEFT JOIN dados d ON d.cliente_id = c.id WHERE c.id = ?";
         try (Connection conn = Conexao.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {

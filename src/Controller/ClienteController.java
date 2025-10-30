@@ -10,8 +10,8 @@ import java.util.List;
 /**
  * Controller atualizado com validações e tratamento de exceções do DAO.
  * Regras:
- *  - lança IllegalArgumentException para erros de validação (regras de negócio)
- *  - lança Exception (envolvendo SQLException) para problemas de persistência
+ * - lança IllegalArgumentException para erros de validação (regras de negócio)
+ * - lança Exception (envolvendo SQLException) para problemas de persistência
  */
 public class ClienteController {
     private ClienteDAO dao = new ClienteDAO();
@@ -41,7 +41,7 @@ public class ClienteController {
         if (c == null || c.getId() <= 0) {
             throw new IllegalArgumentException("Cliente inválido para atualizar.");
         }
-        validarClienteParaSalvar(c); // mesma validação básica
+        validarClienteParaSalvar(c);
         try {
             dao.atualizar(c);
         } catch (SQLException ex) {
@@ -68,7 +68,7 @@ public class ClienteController {
         }
     }
 
-    // busca genérica (nome/email/telefone/cpf/endereço)
+    // busca (nome/email/telefone/cpf/endereço)
     public List<Cliente> buscarClientes(String termo) throws Exception {
         try {
             return dao.buscarPorTermoCompleto(termo);
@@ -89,35 +89,46 @@ public class ClienteController {
     }
 
     /**
-     * Validações básicas de negócio antes de salvar/atualizar.
-     * Ajuste as regras conforme necessidade (ex.: CPF/CNPJ, email, duplicidade).
+     * Validações antes de salvar/atualizar.
      */
     private void validarClienteParaSalvar(Cliente c) {
-    if (c == null) throw new IllegalArgumentException("Cliente não pode ser nulo.");
-    if (c.getNome() == null || c.getNome().trim().isEmpty())
-        throw new IllegalArgumentException("Nome é obrigatório.");
-    Dados d = c.getDados();
-    if (d == null) throw new IllegalArgumentException("Dados do cliente são obrigatórios.");
-    String cpf = d.getCpfCnpj() == null ? "" : d.getCpfCnpj().replaceAll("\\D","");
-    if (cpf.length() != 11 && cpf.length() != 14)
-        throw new IllegalArgumentException("CPF/CNPJ inválido.");
-    if (d.getEmail() == null || !d.getEmail().matches("^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"))
-        throw new IllegalArgumentException("Email inválido.");
-    if (d.getTelefone() == null || d.getTelefone().replaceAll("\\D","").length() < 8)
-        throw new IllegalArgumentException("Telefone inválido.");
+        if (c == null)
+            throw new IllegalArgumentException("Cliente não pode ser nulo.");
+        if (c.getNome() == null || c.getNome().trim().isEmpty())
+            throw new IllegalArgumentException("Nome é obrigatório.");
+        Dados d = c.getDados();
+        if (d == null)
+            throw new IllegalArgumentException("Dados do cliente são obrigatórios.");
+        String cpf = d.getCpfCnpj() == null ? "" : d.getCpfCnpj().replaceAll("\\D", "");
+        if (cpf.length() != 11 && cpf.length() != 14)
+            throw new IllegalArgumentException("CPF/CNPJ inválido.");
+        if (d.getEmail() == null || !d.getEmail().matches("^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"))
+            throw new IllegalArgumentException("Email inválido.");
+        if (d.getTelefone() == null || d.getTelefone().replaceAll("\\D", "").length() < 8)
+            throw new IllegalArgumentException("Telefone inválido.");
 
-    Endereco e = c.getEndereco();
-    if (e == null) throw new IllegalArgumentException("Endereço é obrigatório.");
-    if (e.getTipo() == null || e.getTipo().trim().isEmpty()) throw new IllegalArgumentException("Tipo de endereço obrigatório.");
-    if (e.getLogradouro() == null || e.getLogradouro().trim().isEmpty()) throw new IllegalArgumentException("Logradouro obrigatório.");
-    if (e.getNumero() == null || e.getNumero().trim().isEmpty()) throw new IllegalArgumentException("Número obrigatório.");
-    if (e.getComplemento() == null || e.getComplemento().trim().isEmpty()) throw new IllegalArgumentException("Complemento obrigatório.");
-    if (e.getBairro() == null || e.getBairro().trim().isEmpty()) throw new IllegalArgumentException("Bairro obrigatório.");
-    if (e.getCidade() == null || e.getCidade().trim().isEmpty()) throw new IllegalArgumentException("Cidade obrigatória.");
-    if (e.getEstado() == null || e.getEstado().trim().isEmpty()) throw new IllegalArgumentException("Estado obrigatório.");
-    String cep = e.getCep() == null ? "" : e.getCep().replaceAll("\\D","");
-    if (cep.length() < 7) throw new IllegalArgumentException("CEP inválido.");
-    if (e.getPais() == null || e.getPais().trim().isEmpty()) throw new IllegalArgumentException("País obrigatório.");
-}
+        Endereco e = c.getEndereco();
+        if (e == null)
+            throw new IllegalArgumentException("Endereço é obrigatório.");
+        if (e.getTipo() == null || e.getTipo().trim().isEmpty())
+            throw new IllegalArgumentException("Tipo de endereço obrigatório.");
+        if (e.getLogradouro() == null || e.getLogradouro().trim().isEmpty())
+            throw new IllegalArgumentException("Logradouro obrigatório.");
+        if (e.getNumero() == null || e.getNumero().trim().isEmpty())
+            throw new IllegalArgumentException("Número obrigatório.");
+        if (e.getComplemento() == null || e.getComplemento().trim().isEmpty())
+            throw new IllegalArgumentException("Complemento obrigatório.");
+        if (e.getBairro() == null || e.getBairro().trim().isEmpty())
+            throw new IllegalArgumentException("Bairro obrigatório.");
+        if (e.getCidade() == null || e.getCidade().trim().isEmpty())
+            throw new IllegalArgumentException("Cidade obrigatória.");
+        if (e.getEstado() == null || e.getEstado().trim().isEmpty())
+            throw new IllegalArgumentException("Estado obrigatório.");
+        String cep = e.getCep() == null ? "" : e.getCep().replaceAll("\\D", "");
+        if (cep.length() < 7)
+            throw new IllegalArgumentException("CEP inválido.");
+        if (e.getPais() == null || e.getPais().trim().isEmpty())
+            throw new IllegalArgumentException("País obrigatório.");
+    }
 
 }

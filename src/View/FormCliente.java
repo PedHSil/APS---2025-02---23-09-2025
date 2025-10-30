@@ -8,10 +8,7 @@ import Model.Endereco;
 import java.awt.*;
 import java.awt.event.*;
 
-/**
- * Formulário simples para adicionar/editar cliente (AWT).
- * Inclui validações e tratativas de erro básicas.
- */
+
 public class FormCliente extends Frame {
     private JanelaPrincipal parent;
     private ClienteController controller;
@@ -22,7 +19,6 @@ public class FormCliente extends Frame {
     private TextField txtEmail = new TextField(30);
     private TextField txtTelefone = new TextField(20);
 
-    // Endereço
     private Choice cbTipo = new Choice();
     private TextField txtLogradouro = new TextField(30);
     private TextField txtNumero = new TextField(8);
@@ -47,14 +43,12 @@ public class FormCliente extends Frame {
 
         Panel center = new Panel(new GridLayout(3, 1, 4, 6));
 
-        // Linha: nome
         Panel pNome = new Panel(new FlowLayout(FlowLayout.LEFT));
         pNome.add(new Label("Nome:"));
         txtNome.setText(this.cliente.getNome() == null ? "" : this.cliente.getNome());
         pNome.add(txtNome);
         center.add(pNome);
 
-        // Linha: dados
         Panel pDados = new Panel(new FlowLayout(FlowLayout.LEFT));
         pDados.add(new Label("CPF/CNPJ:"));
         txtCpfCnpj.setText(this.cliente.getDados() == null ? "" : safe(this.cliente.getDados().getCpfCnpj()));
@@ -67,16 +61,20 @@ public class FormCliente extends Frame {
         pDados.add(txtTelefone);
         center.add(pDados);
 
-        // Endereço
         Panel pEndereco = new Panel(new GridLayout(3, 1));
         Panel pTipo = new Panel(new FlowLayout(FlowLayout.LEFT));
         pTipo.add(new Label("Tipo:"));
-        cbTipo.add("residencial"); cbTipo.add("comercial"); cbTipo.add("entrega"); cbTipo.add("outro");
-        String tipoAtual = this.cliente.getEndereco() == null ? "residencial" : safe(this.cliente.getEndereco().getTipo());
+        cbTipo.add("residencial");
+        cbTipo.add("comercial");
+        cbTipo.add("entrega");
+        cbTipo.add("outro");
+        String tipoAtual = this.cliente.getEndereco() == null ? "residencial"
+                : safe(this.cliente.getEndereco().getTipo());
         cbTipo.select(tipoAtual);
         pTipo.add(cbTipo);
         pTipo.add(new Label("Logradouro:"));
-        txtLogradouro.setText(this.cliente.getEndereco() == null ? "" : safe(this.cliente.getEndereco().getLogradouro()));
+        txtLogradouro
+                .setText(this.cliente.getEndereco() == null ? "" : safe(this.cliente.getEndereco().getLogradouro()));
         pTipo.add(txtLogradouro);
         pTipo.add(new Label("Nº:"));
         txtNumero.setText(this.cliente.getEndereco() == null ? "" : safe(this.cliente.getEndereco().getNumero()));
@@ -85,7 +83,8 @@ public class FormCliente extends Frame {
 
         Panel pLinha2 = new Panel(new FlowLayout(FlowLayout.LEFT));
         pLinha2.add(new Label("Complemento:"));
-        txtComplemento.setText(this.cliente.getEndereco() == null ? "" : safe(this.cliente.getEndereco().getComplemento()));
+        txtComplemento
+                .setText(this.cliente.getEndereco() == null ? "" : safe(this.cliente.getEndereco().getComplemento()));
         pLinha2.add(txtComplemento);
         pLinha2.add(new Label("Bairro:"));
         txtBairro.setText(this.cliente.getEndereco() == null ? "" : safe(this.cliente.getEndereco().getBairro()));
@@ -135,19 +134,22 @@ public class FormCliente extends Frame {
 
     private void salvar() {
         try {
-            if (!validarCampos()) return;
+            if (!validarCampos())
+                return;
 
             cliente.setNome(txtNome.getText().trim());
 
             Dados d = cliente.getDados();
-            if (d == null) d = new Dados();
+            if (d == null)
+                d = new Dados();
             d.setCpfCnpj(txtCpfCnpj.getText().trim());
             d.setEmail(txtEmail.getText().trim());
             d.setTelefone(txtTelefone.getText().trim());
             cliente.setDados(d);
 
             Endereco e = cliente.getEndereco();
-            if (e == null) e = new Endereco();
+            if (e == null)
+                e = new Endereco();
             e.setTipo(cbTipo.getSelectedItem());
             e.setLogradouro(txtLogradouro.getText().trim());
             e.setNumero(txtNumero.getText().trim());
@@ -177,35 +179,42 @@ public class FormCliente extends Frame {
     }
 
     private boolean validarCampos() {
-    StringBuilder erros = new StringBuilder();
+        StringBuilder erros = new StringBuilder();
 
-    if (txtNome.getText().trim().isEmpty()) erros.append("- Nome obrigatório\n");
-    if (txtCpfCnpj.getText().trim().replaceAll("\\D","").length() != 11 &&
-        txtCpfCnpj.getText().trim().replaceAll("\\D","").length() != 14)
-        erros.append("- CPF/CNPJ inválido\n");
-    if (txtEmail.getText().trim().isEmpty() ||
-        !txtEmail.getText().matches("^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"))
-        erros.append("- Email inválido\n");
-    if (txtTelefone.getText().trim().replaceAll("\\D","").length() < 8)
-        erros.append("- Telefone inválido\n");
-    if (txtLogradouro.getText().trim().isEmpty()) erros.append("- Logradouro obrigatório\n");
-    if (txtNumero.getText().trim().isEmpty()) erros.append("- Número obrigatório\n");
-    if (txtComplemento.getText().trim().isEmpty()) erros.append("- Complemento obrigatório\n");
-    if (txtBairro.getText().trim().isEmpty()) erros.append("- Bairro obrigatório\n");
-    if (txtCidade.getText().trim().isEmpty()) erros.append("- Cidade obrigatória\n");
-    if (txtEstado.getText().trim().isEmpty()) erros.append("- Estado obrigatório\n");
-    if (txtCep.getText().trim().replaceAll("\\D","").length() < 7)
-        erros.append("- CEP inválido\n");
-    if (txtPais.getText().trim().isEmpty()) erros.append("- País obrigatório\n");
+        if (txtNome.getText().trim().isEmpty())
+            erros.append("- Nome obrigatório\n");
+        if (txtCpfCnpj.getText().trim().replaceAll("\\D", "").length() != 11 &&
+                txtCpfCnpj.getText().trim().replaceAll("\\D", "").length() != 14)
+            erros.append("- CPF/CNPJ inválido\n");
+        if (txtEmail.getText().trim().isEmpty() ||
+                !txtEmail.getText().matches("^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"))
+            erros.append("- Email inválido\n");
+        if (txtTelefone.getText().trim().replaceAll("\\D", "").length() < 8)
+            erros.append("- Telefone inválido\n");
+        if (txtLogradouro.getText().trim().isEmpty())
+            erros.append("- Logradouro obrigatório\n");
+        if (txtNumero.getText().trim().isEmpty())
+            erros.append("- Número obrigatório\n");
+        if (txtComplemento.getText().trim().isEmpty())
+            erros.append("- Complemento obrigatório\n");
+        if (txtBairro.getText().trim().isEmpty())
+            erros.append("- Bairro obrigatório\n");
+        if (txtCidade.getText().trim().isEmpty())
+            erros.append("- Cidade obrigatória\n");
+        if (txtEstado.getText().trim().isEmpty())
+            erros.append("- Estado obrigatório\n");
+        if (txtCep.getText().trim().replaceAll("\\D", "").length() < 7)
+            erros.append("- CEP inválido\n");
+        if (txtPais.getText().trim().isEmpty())
+            erros.append("- País obrigatório\n");
 
-    if (erros.length() > 0) {
-        mostrarErro("Corrija os seguintes campos:\n" + erros.toString());
-        return false;
+        if (erros.length() > 0) {
+            mostrarErro("Corrija os seguintes campos:\n" + erros.toString());
+            return false;
+        }
+
+        return true;
     }
-
-    return true;
-}
-
 
     private void mostrarErro(String msg) {
         Dialog d = new Dialog(this, "Erro", true);
