@@ -2,175 +2,222 @@ package View;
 
 import Controller.ClienteController;
 import Model.Cliente;
-import View.FormCliente;
+import Model.Endereco;
 
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JOptionPane;
 
-public class JanelaPrincipal extends Frame {
-    private ClienteController controller = new ClienteController();
-    private java.awt.List lista = new java.awt.List();
-    private TextField txtBusca = new TextField(20);
+public class JanelaPrincipal extends JFrame {
+
+    private final ClienteController controller = new ClienteController();
+    private final JTextField txtBusca = new JTextField(24);
+
+    private final String[] COLUNAS = new String[]{
+            "ID", "Nome", "Email", "Telefone", "CPF/CNPJ",
+            "Tipo", "Logradouro", "Número", "Complemento",
+            "Bairro", "Cidade", "Estado", "CEP", "País"
+    };
+
+    private final DefaultTableModel model = new DefaultTableModel(COLUNAS, 0) {
+        @Override public boolean isCellEditable(int row, int column) { return false; }
+    };
+    private final JTable tabela = new JTable(model);
 
     // mantém a lista atualmente exibida (com ou sem filtro)
     private List<Cliente> listaAtual = new ArrayList<>();
 
     public JanelaPrincipal() {
-        setTitle("Clientes - Escritório de Arquitetura");
-        setSize(600, 500);
-        setLayout(new BorderLayout(10, 10));
+        super("Clientes - Escritório de Arquitetura");
 
+        // ====== Tema/estética (opcional, pode tirar se quiser) ======
         Color corFundo = new Color(30, 30, 30);
         Color corTexto = Color.WHITE;
         Color corListaFundo = new Color(45, 45, 45);
         Color corBotaoFiltrar = new Color(70, 130, 180);
-
-        setBackground(corFundo);
         Font fontePadrao = new Font("Century Gothic", Font.PLAIN, 14);
+
+        JPanel raiz = new JPanel(new BorderLayout(10, 10));
+        raiz.setBackground(corFundo);
+        setContentPane(raiz);
         setFont(fontePadrao);
 
-        lista.setBackground(corListaFundo);
-        lista.setForeground(corTexto);
-        lista.setFont(fontePadrao);
+        // ====== Barra de busca ======
+        JPanel painelBusca = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        painelBusca.setBackground(corFundo);
+
+        JLabel lblBuscar = new JLabel("Buscar:");
+        lblBuscar.setForeground(corTexto);
+        lblBuscar.setFont(new Font("Century Gothic", Font.BOLD, 14));
 
         txtBusca.setBackground(corListaFundo);
         txtBusca.setForeground(corTexto);
         txtBusca.setFont(fontePadrao);
 
-        Panel painelBusca = new Panel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        painelBusca.setBackground(corFundo);
-        Label lblBuscar = new Label("Buscar:");
-        lblBuscar.setForeground(corTexto);
-        lblBuscar.setFont(new Font("Century Gothic", Font.BOLD, 14));
-        painelBusca.add(lblBuscar);
-        painelBusca.add(txtBusca);
-        Button btnBuscar = new Button("Filtrar");
+        JButton btnBuscar = new JButton("Filtrar");
         btnBuscar.setBackground(corBotaoFiltrar);
         btnBuscar.setForeground(corTexto);
-        painelBusca.add(btnBuscar);
-        add(painelBusca, BorderLayout.NORTH);
 
-        Panel botoes = new Panel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        painelBusca.add(lblBuscar);
+        painelBusca.add(txtBusca);
+        painelBusca.add(btnBuscar);
+        raiz.add(painelBusca, BorderLayout.NORTH);
+
+        // ====== Tabela ======
+        tabela.setFont(fontePadrao);
+        tabela.setRowHeight(22);
+        tabela.setAutoResizeMode(JTable.AUTO_RESIZE_OFF); // não encolhe colunas
+        tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        // Larguras iniciais (ajuste à vontade)
+        int[] w = {50, 160, 220, 120, 120, 90, 220, 80, 140, 140, 140, 80, 100, 100};
+        for (int i = 0; i < w.length && i < tabela.getColumnCount(); i++) {
+            tabela.getColumnModel().getColumn(i).setPreferredWidth(w[i]);
+        }
+
+        JScrollPane scroll = new JScrollPane(tabela);
+        scroll.getViewport().setBackground(corListaFundo);
+        raiz.add(scroll, BorderLayout.CENTER);
+
+        // ====== Botões ======
+        JPanel botoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         botoes.setBackground(corFundo);
-        Button btnAdd = new Button("Adicionar");
-        Button btnRemover = new Button("Remover");
-        Button btnEditar = new Button("Editar");
-        btnAdd.setForeground(Color.BLACK);
-        btnRemover.setForeground(Color.BLACK);
-        btnEditar.setForeground(Color.BLACK);
+
+        JButton btnAdd = new JButton("Adicionar");
+        JButton btnRemover = new JButton("Remover");
+        JButton btnEditar = new JButton("Editar");
+
         botoes.add(btnAdd);
         botoes.add(btnRemover);
         botoes.add(btnEditar);
+        raiz.add(botoes, BorderLayout.SOUTH);
 
-        add(lista, BorderLayout.CENTER);
-        add(botoes, BorderLayout.SOUTH);
+        // ====== Ações ======
+        btnBuscar.addActionListener(e -> filtrarLista());
+        txtBusca.addActionListener(e -> filtrarLista());
 
-        atualizarLista(); // carrega sem filtro
+        btnAdd.addActionListener(e -> new FormCliente(this, controller, null)); // cria e ao salvar chama parent.atualizarLista()
 
-        // Duplo clique usa a lista que está NA TELA (listaAtual)
-        lista.addMouseListener(new MouseAdapter() {
+        btnRemover.addActionListener(e -> {
+            int idx = tabela.getSelectedRow();
+            if (idx >= 0 && idx < listaAtual.size()) {
+                Cliente c = listaAtual.get(idx);
+                try {
+                    controller.removerCliente(c.getId());
+                    atualizarLista();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Erro ao remover cliente:\n" + ex.getMessage(),
+                            "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnEditar.addActionListener(e -> {
+            int idx = tabela.getSelectedRow();
+            if (idx >= 0 && idx < listaAtual.size()) {
+                Cliente c = listaAtual.get(idx);
+                try {
+                    Cliente completo = controller.buscarClientePorId(c.getId());
+                    new FormCliente(this, controller, completo);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Erro ao buscar cliente:\n" + ex.getMessage(),
+                            "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // Duplo clique: mostra detalhes com todas as infos (comportamento similar ao antigo)
+        tabela.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    int idx = lista.getSelectedIndex();
+                    int idx = tabela.getSelectedRow();
                     if (idx >= 0 && idx < listaAtual.size()) {
                         Cliente c = listaAtual.get(idx);
-                        String linhaCompleta = c.getId() + " - " + (c.getNome() == null ? "" : c.getNome())
-                                + "\nEmail: " + (c.getEmail() == null ? "" : c.getEmail())
-                                + "\nTelefone: " + (c.getTelefone() == null ? "" : c.getTelefone())
-                                + "\nCPF/CNPJ: " + (c.getCpfCnpj() == null ? "" : c.getCpfCnpj());
-                        JOptionPane.showMessageDialog(null, linhaCompleta, "Detalhes do Cliente", JOptionPane.INFORMATION_MESSAGE);
+                        Endereco ePrincipal = c.getEndereco();
+                        String linhaCompleta =
+                                c.getId() + " - " + n(c.getNome()) +
+                                "\nEmail: " + n(c.getEmail()) +
+                                "\nTelefone: " + n(c.getTelefone()) +
+                                "\nCPF/CNPJ: " + n(c.getCpfCnpj()) +
+                                "\nEndereço: " +
+                                n(ePrincipal.getTipo()) + " | " +
+                                n(ePrincipal.getLogradouro()) + ", " + n(ePrincipal.getNumero()) +
+                                " - " + n(ePrincipal.getBairro()) +
+                                " - " + n(ePrincipal.getCidade()) + "/" + n(ePrincipal.getEstado()) +
+                                " - CEP " + n(ePrincipal.getCep()) +
+                                " - " + n(ePrincipal.getPais());
+                        JOptionPane.showMessageDialog(JanelaPrincipal.this, linhaCompleta,
+                                "Detalhes do Cliente", JOptionPane.INFORMATION_MESSAGE);
                     }
                 }
             }
         });
 
-        btnAdd.addActionListener(e -> new FormCliente(this, controller, null));
+        // ====== Janela ======
+        setSize(1100, 560);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-        btnRemover.addActionListener(e -> {
-    int idx = lista.getSelectedIndex();
-    if (idx >= 0 && idx < listaAtual.size()) {
-        Cliente c = listaAtual.get(idx);
-        try {
-            controller.removerCliente(c.getId());
-            atualizarLista();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erro ao remover cliente:\n" + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-});
-
-btnEditar.addActionListener(e -> {
-    int idx = lista.getSelectedIndex();
-    if (idx >= 0 && idx < listaAtual.size()) {
-        Cliente c = listaAtual.get(idx);
-        try {
-            Cliente completo = controller.buscarClientePorId(c.getId());
-            new FormCliente(this, controller, completo);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erro ao buscar cliente:\n" + ex.getMessage(),
-                    "Erro", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-});
-
-
-        btnBuscar.addActionListener(e -> filtrarLista());
-        txtBusca.addActionListener(e -> filtrarLista());
-
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) { dispose(); }
-        });
+        // carrega sem filtro
+        atualizarLista();
 
         setVisible(true);
     }
 
-   // Lista sem filtro
-public void atualizarLista() {
-    lista.removeAll();
-    try {
-        listaAtual = controller.listarClientes();
-        for (Cliente c : listaAtual) adicionarLinha(c);
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Erro ao listar clientes:\n" + e.getMessage(),
-                "Erro", JOptionPane.ERROR_MESSAGE);
-    }
-    validate();
-    repaint();
-}
+    private static String n(String s) { return (s == null) ? "" : s; }
 
-// Lista com filtro (usa buscarPorTermoCompleto)
-private void filtrarLista() {
-    String termo = txtBusca.getText().trim();
-    lista.removeAll();
-    try {
-        if (termo.isEmpty()) {
+    public void atualizarLista() {
+        try {
             listaAtual = controller.listarClientes();
-        } else {
-            listaAtual = controller.buscarClientes(termo);
+            preencherTabela(listaAtual);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao listar clientes:\n" + e.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
         }
-        for (Cliente c : listaAtual) adicionarLinha(c);
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Erro ao buscar clientes:\n" + e.getMessage(),
-                "Erro", JOptionPane.ERROR_MESSAGE);
-    }
-    validate();
-    repaint();
-}
-
-
-    private void adicionarLinha(Cliente c) {
-        String nome = c.getNome() == null ? "" : c.getNome();
-        String email = c.getEmail() == null ? "" : c.getEmail();
-        String telefone = c.getTelefone() == null ? "" : c.getTelefone();
-        String emailShort = email.length() > 20 ? email.substring(0, 17) + "..." : email;
-        String telShort = telefone.length() > 15 ? telefone.substring(0, 12) + "..." : telefone;
-        String linha = String.format("%d - %s | %s | %s", c.getId(), nome, emailShort, telShort);
-        lista.add(linha);
     }
 
-    public static void main(String[] args) { new JanelaPrincipal(); }
+    private void filtrarLista() {
+        String termo = txtBusca.getText().trim();
+        try {
+            if (termo.isEmpty()) {
+                listaAtual = controller.listarClientes();
+            } else {
+                listaAtual = controller.buscarClientes(termo);
+            }
+            preencherTabela(listaAtual);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao buscar clientes:\n" + e.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void preencherTabela(List<Cliente> dados) {
+        model.setRowCount(0);
+        for (Cliente c : dados) {
+            Endereco e = c.getEndereco(); // usa o “principal”
+            model.addRow(new Object[]{
+                    c.getId(),
+                    n(c.getNome()),
+                    n(c.getEmail()),
+                    n(c.getTelefone()),
+                    n(c.getCpfCnpj()),
+                    n(e.getTipo()),
+                    n(e.getLogradouro()),
+                    n(e.getNumero()),
+                    n(e.getComplemento()),
+                    n(e.getBairro()),
+                    n(e.getCidade()),
+                    n(e.getEstado()),
+                    n(e.getCep()),
+                    n(e.getPais())
+            });
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(JanelaPrincipal::new);
+    }
 }
