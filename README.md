@@ -1,3 +1,4 @@
+# SQL utilizado no tabalho
 -- Criar base e usar
 CREATE DATABASE IF NOT EXISTS arquitetura;
   
@@ -72,8 +73,11 @@ VALUES
   (1, 'entrega', 'Av. Paulista', '2000', NULL, 'Bela Vista', 'São Paulo', 'SP', '01310-200'),
   (2, 'comercial', 'Rua do Comércio', '45', 'Sala 5', 'Centro', 'Rio de Janeiro', 'RJ', '20010-000');
 
+
+# comandos 
 cd "C:\Users\Pedro\Documents\APS - 2025-02 - 23-09-2025\APS - 2025-02 - 23-09-2025\src"
 $files = Get-ChildItem -Recurse -Filter *.java | ForEach-Object { $_.FullName }
 javac -d ..\bin $files
 
+# ubuntu (wsl)
 mysql -u root -p
