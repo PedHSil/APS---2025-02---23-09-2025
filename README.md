@@ -79,5 +79,7 @@ cd "C:\Users\Pedro\Documents\APS - 2025-02 - 23-09-2025\APS - 2025-02 - 23-09-20
 $files = Get-ChildItem -Recurse -Filter *.java | ForEach-Object { $_.FullName }
 javac -d ..\bin $files
 
+
+javac -cp . src/Model/.java src/View/.java src/Controller/*.java -d bin
 # ubuntu (wsl)
 mysql -u root -p

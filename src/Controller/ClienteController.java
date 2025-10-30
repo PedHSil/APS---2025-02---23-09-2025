@@ -38,16 +38,18 @@ public class ClienteController {
     }
 
     public void atualizarCliente(Cliente c) throws Exception {
-        if (c == null || c.getId() <= 0) {
-            throw new IllegalArgumentException("Cliente inválido para atualizar.");
-        }
-        validarClienteParaSalvar(c);
-        try {
-            dao.atualizar(c);
-        } catch (SQLException ex) {
-            throw new Exception("Erro ao atualizar cliente no banco: " + ex.getMessage(), ex);
-        }
+    if (c == null || c.getId() <= 0) {
+        throw new IllegalArgumentException("Cliente inválido para atualizar.");
     }
+    validarClienteParaSalvar(c);
+    try {
+        dao.atualizarClienteCompleto(c); // atualiza cliente + dados + endereco dentro de transação
+    } catch (SQLException ex) {
+        throw new Exception("Erro ao atualizar cliente no banco: " + ex.getMessage(), ex);
+    }
+}
+
+
 
     public void removerCliente(int id) throws Exception {
         if (id <= 0) {

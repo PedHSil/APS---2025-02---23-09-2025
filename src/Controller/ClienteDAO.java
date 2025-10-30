@@ -153,6 +153,65 @@ public class ClienteDAO {
         return lista;
     }
 
+    public void atualizarClienteCompleto(Cliente cliente) throws SQLException {
+    Connection conn = null;
+    try {
+        conn = Conexao.getConnection();
+        conn.setAutoCommit(false);
+
+        // Atualizar cliente
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE cliente SET nome = ? WHERE id = ?")) {
+            stmt.setString(1, cliente.getNome());
+            stmt.setInt(2, cliente.getId());
+            stmt.executeUpdate();
+        }
+
+        // Atualizar dados
+        Dados d = cliente.getDados();
+        if (d != null) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE dados SET cpf_cnpj = ?, email = ?, telefone = ? WHERE cliente_id = ?")) {
+                stmt.setString(1, d.getCpfCnpj());
+                stmt.setString(2, d.getEmail());
+                stmt.setString(3, d.getTelefone());
+                stmt.setInt(4, cliente.getId());
+                stmt.executeUpdate();
+            }
+        }
+
+        // Atualizar endereço
+        Endereco e = cliente.getEndereco();
+        if (e != null) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE endereco SET tipo = ?, logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?, pais = ? WHERE id = ?")) {
+                stmt.setString(1, e.getTipo());
+                stmt.setString(2, e.getLogradouro());
+                stmt.setString(3, e.getNumero());
+                stmt.setString(4, e.getComplemento());
+                stmt.setString(5, e.getBairro());
+                stmt.setString(6, e.getCidade());
+                stmt.setString(7, e.getEstado());
+                stmt.setString(8, e.getCep());
+                stmt.setString(9, e.getPais());
+                stmt.setInt(10, e.getId());
+                stmt.executeUpdate();
+            }
+        }
+
+        conn.commit();
+    } catch (SQLException ex) {
+        if (conn != null) conn.rollback();
+        throw ex;
+    } finally {
+        if (conn != null) {
+            conn.setAutoCommit(true);
+            conn.close();
+        }
+    }
+}
+
+
     // Busca por termo (nome/email/telefone/cpf_cnpj e endereço)
     public List<Cliente> buscarPorTermoCompleto(String termo) throws SQLException {
         String sql = """
